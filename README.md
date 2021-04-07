@@ -1,4 +1,4 @@
-# postgreSQL
+# postgreSQL y pl/pgsql
 
 SQL realizado en postgreSQL, 
 cuenta con 3 tablas relacionadas entre si, 
