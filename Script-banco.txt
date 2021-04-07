@@ -1,0 +1,179 @@
+CREATE table cuenta
+(
+  cod_cuenta int primary key,
+  nom_cuenta varchar(30),
+  sal_cuenta int
+);
+
+CREATE table tipo_movimiento
+(
+  cod_t_movimiento int primary key,
+  nom_t_movimiento varchar(30)
+);
+
+CREATE table movimiento
+(
+  cod_movimiento int primary key, 
+  cod_cuenta int,
+  cod_t_movimiento int,
+  val_movimiento int
+);
+
+ALTER TABLE MOVIMIENTO add constraint M_C_FK FOREIGN KEY(cod_cuenta) references CUENTA(cod_cuenta);
+
+ALTER TABLE MOVIMIENTO add constraint M_TM_FK FOREIGN KEY(cod_t_movimiento) references TIPO_MOVIMIENTO(cod_t_movimiento);
+
+insert into cuenta values(1,'Carolina C.', 0);
+insert into cuenta values(2,'Paola T.', 0);
+insert into cuenta values(3,'Jessica C.', 0);
+insert into cuenta values(4,'Laura Acuña.', 0);
+
+insert into tipo_movimiento values(1,'Consignación');
+insert into tipo_movimiento values(2,'Retiro');
+insert into tipo_movimiento values(3,'Consulta');
+
+create table auditoria_movimiento
+(
+  fecha date,
+  cod_cuenta int,
+  val_movimiento int,
+  ip varchar(30),
+  operacion varchar(50)
+); 
+
+
+---------------------------------------------------------------------------------------------
+
+-- Función que devuelve un trigger
+CREATE OR REPLACE FUNCTION AI_MOVIMIENTO() RETURNS TRIGGER AS $insertar$
+DECLARE
+  BEGIN
+   IF(NEW.cod_t_movimiento = 1) then 
+     IF(NEW.val_movimiento >=0) then
+      update CUENTA
+       set sal_cuenta = sal_cuenta + NEW.val_movimiento
+      WHERE
+       cuenta.cod_cuenta = NEW.cod_cuenta;
+     ELSE
+         INSERT INTO auditoria_movimiento VALUES(pg_postmaster_start_time(),NEW.cod_cuenta,NEW.val_movimiento,inet_client_addr(),'Consignación Fallida');
+     END IF;
+     
+   ELSIF(NEW.cod_t_movimiento = 2) THEN
+     IF(saldoCuenta(NEW.cod_cuenta) >= NEW.val_movimiento) THEN
+        IF(NEW.val_movimiento >=0)THEN
+              update CUENTA
+                  set sal_cuenta = sal_cuenta - NEW.val_movimiento
+              WHERE 
+                   cuenta.cod_cuenta = NEW.cod_cuenta;
+        ELSE
+          INSERT INTO auditoria_movimiento VALUES(pg_postmaster_start_time(),NEW.cod_cuenta,NEW.val_movimiento,inet_client_addr(),'Retiro Fallido');  
+        END IF;
+        
+     ELSE
+         INSERT INTO auditoria_movimiento VALUES(pg_postmaster_start_time(),NEW.cod_cuenta,NEW.val_movimiento,inet_client_addr(), 'Retiro Fallido');
+     END IF; 
+
+   ELSIF(NEW.cod_t_movimiento = 3) then
+      raise notice 'La cuenta con el código %', NEW.cod_cuenta;
+      raise notice 'Tiene un saldo de -> %', saldoCuenta(NEW.cod_cuenta);
+    
+   END IF;
+   RETURN null;
+  END;
+  $insertar$ LANGUAGE plpgsql;
+
+  -------------------------------------------------------------------------------------------------
+
+-- Crea el trigger con la anterior función
+  CREATE TRIGGER insertar after insert
+  on movimiento for each row
+  execute procedure AI_MOVIMIENTO();
+
+-- Saldo de la Cuenta ingresada por parámetro
+CREATE OR REPLACE FUNCTION saldoCuenta(num integer) RETURNS int AS $$
+ DECLARE 
+  registro RECORD;
+  cursor1 CURSOR FOR
+  SELECT 
+    sal_cuenta
+  FROM 
+    CUENTA
+  WHERE
+    CUENTA.cod_cuenta = num;
+
+  BEGIN
+    OPEN cursor1;
+    FETCH cursor1 INTO registro;
+    RETURN registro.sal_cuenta;
+  END;
+  $$ LANGUAGE plpgsql;
+
+
+  
+        
+-- Inserta datos en la tabla movimiento. Cod_cuenta, cod_movimiento
+  insert into movimiento values(1,1,1,5000);
+  insert into movimiento values(14,1,1,-5000);
+
+-- Consulta
+  insert into movimiento values(3,1,3,0);
+  
+-- Elimina
+  insert into movimiento values(4,1,2,6000);
+  insert into movimiento values(5,1,2,2000);
+  
+
+  
+
+  
+-- Consulta de las tablas Cuenta y Movimiento
+  select * from cuenta;
+  select * from movimiento;
+
+  
+
+  select * from auditoria_movimiento;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------
+
+
+
+-- Consultar si existe una cuenta
+CREATE OR REPLACE FUNCTION existeCuenta(num integer) RETURNS text AS $$
+ DECLARE 
+  registro RECORD;
+  cursor2 CURSOR FOR
+  SELECT 
+   cod_cuenta
+  FROM 
+    CUENTA
+  WHERE
+    CUENTA.cod_cuenta = num;
+  BEGIN
+    OPEN cursor2;
+    FETCH cursor2 INTO registro;
+    RETURN registro.cod_cuenta;
+  END;
+  $$ LANGUAGE plpgsql;  
+
+  drop function existeCuenta(integer)
+
+  select existeCuenta(2);
