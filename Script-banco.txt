@@ -1,3 +1,4 @@
+--JOHAN PALMA BURGOS
 CREATE table cuenta
 (
   cod_cuenta int primary key,
@@ -26,9 +27,9 @@ ALTER TABLE MOVIMIENTO add constraint M_TM_FK FOREIGN KEY(cod_t_movimiento) refe
 insert into cuenta values(1,'Carolina C.', 0);
 insert into cuenta values(2,'Paola T.', 0);
 insert into cuenta values(3,'Jessica C.', 0);
-insert into cuenta values(4,'Laura Acu馻.', 0);
+insert into cuenta values(4,'Laura Acu帽a.', 0);
 
-insert into tipo_movimiento values(1,'Consignaci髇');
+insert into tipo_movimiento values(1,'Consignaci贸n');
 insert into tipo_movimiento values(2,'Retiro');
 insert into tipo_movimiento values(3,'Consulta');
 
@@ -44,7 +45,7 @@ create table auditoria_movimiento
 
 ---------------------------------------------------------------------------------------------
 
--- Funci髇 que devuelve un trigger
+-- Funci贸n que devuelve un trigger
 CREATE OR REPLACE FUNCTION AI_MOVIMIENTO() RETURNS TRIGGER AS $insertar$
 DECLARE
   BEGIN
@@ -55,7 +56,7 @@ DECLARE
       WHERE
        cuenta.cod_cuenta = NEW.cod_cuenta;
      ELSE
-         INSERT INTO auditoria_movimiento VALUES(pg_postmaster_start_time(),NEW.cod_cuenta,NEW.val_movimiento,inet_client_addr(),'Consignaci髇 Fallida');
+         INSERT INTO auditoria_movimiento VALUES(pg_postmaster_start_time(),NEW.cod_cuenta,NEW.val_movimiento,inet_client_addr(),'Consignaci贸n Fallida');
      END IF;
      
    ELSIF(NEW.cod_t_movimiento = 2) THEN
@@ -74,7 +75,7 @@ DECLARE
      END IF; 
 
    ELSIF(NEW.cod_t_movimiento = 3) then
-      raise notice 'La cuenta con el c骴igo %', NEW.cod_cuenta;
+      raise notice 'La cuenta con el c贸digo %', NEW.cod_cuenta;
       raise notice 'Tiene un saldo de -> %', saldoCuenta(NEW.cod_cuenta);
     
    END IF;
@@ -84,12 +85,12 @@ DECLARE
 
   -------------------------------------------------------------------------------------------------
 
--- Crea el trigger con la anterior funci髇
+-- Crea el trigger con la anterior funci贸n
   CREATE TRIGGER insertar after insert
   on movimiento for each row
   execute procedure AI_MOVIMIENTO();
 
--- Saldo de la Cuenta ingresada por par醡etro
+-- Saldo de la Cuenta ingresada por par谩metro
 CREATE OR REPLACE FUNCTION saldoCuenta(num integer) RETURNS int AS $$
  DECLARE 
   registro RECORD;
@@ -134,27 +135,7 @@ CREATE OR REPLACE FUNCTION saldoCuenta(num integer) RETURNS int AS $$
 
   select * from auditoria_movimiento;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ------------------------------
-
-
 
 -- Consultar si existe una cuenta
 CREATE OR REPLACE FUNCTION existeCuenta(num integer) RETURNS text AS $$
